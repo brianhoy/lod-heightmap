@@ -19,7 +19,7 @@ export class Player {
 	private clock: THREE.Clock;
 
 	private pointerLockEnabled: boolean;
-	private pointerLockControls: PointerLockControls;
+	public pointerLockControls: PointerLockControls;
 
 	private velocity: THREE.Vector3;
 	private cameraRotation: THREE.Euler;
@@ -118,7 +118,7 @@ export class Player {
 	private calculateNewVelocity(delta: number): void {
 		this.velocity.set(0, 0, 0);
 
-		let walkingSpeed = 400;
+		let walkingSpeed = 20;
 
 		if (this.moveForward) this.velocity.z -= walkingSpeed * delta;
 		if (this.moveBackward) this.velocity.z += walkingSpeed * delta;

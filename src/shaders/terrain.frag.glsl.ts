@@ -2,6 +2,7 @@ export function GetTerrainFragmentShader(): string { return `
 #extension GL_OES_standard_derivatives : enable
 uniform float uScale;
 uniform sampler2D uHeightData;
+uniform sampler2D uRock;
 
 varying float vMorphFactor;
 varying vec3 vNormal;
@@ -11,7 +12,7 @@ varying vec3 vPosition;
 
 float getHeight(vec3 p) {
 	// Assume a 1024x1024 world
-	vec2 st = p.xy / 1024.0;
+	vec2 st = p.xz / 1024.0;
 
 	// Sample multiple times to get more detail out of map
 	float h = 1024.0 * texture2D(uHeightData, st).a;
@@ -28,28 +29,36 @@ vec3 getNormal() {
 	// calculation here, rather than in the vertex shader, we get a per-fragment calculated normal, rather
 	// than a per-vertex normal. This improves the look of distant low-vertex terrain.
 	float height = getHeight( vPosition );
-	vec3 p = vec3( vPosition.xy, height );
+	vec3 p = vec3( vPosition.x, vPosition.y, vPosition.z );
 	vec3 dPositiondx = dFdx(p);
 	vec3 dPositiondy = dFdy(p);
 
 	// The normal is the cross product of the differentials
-	return normalize(cross(dPositiondx, dPositiondy));
+  return normalize(cross(dPositiondx, dPositiondy));
+	/*vec3 fdx = vec3( dFdx( vPosition.x ), dFdx( vPosition.y ), dFdx( vPosition.z ) );
+	vec3 fdy = vec3( dFdy( vPosition.x ), dFdy( vPosition.y ), dFdy( vPosition.z ) );
+	vec3 normal = normalize( cross( fdx, fdy ) );
+	return normal; */
 }
 
 void main() {
 	// Base color
 	vec3 light = vec3(80.0, 150.0, 50.0);
-	//vec3 color = colorForScale(uScale);
-	vec3 color = vec3(0.27, 0.27, 0.17);
-	//color = vec3(vMorphFactor);
+	vec3 color = colorForScale(uScale);
+	float texScale = 0.03;
+
+	//vec3 color = vec3(0.27, 0.27, 0.17); 
+	//vec3 color = texture2D(uRock, texScale * vPosition.xz).rgb; 
+	color = mix(vec3(vMorphFactor), color, 1.0 - vMorphFactor);
 
 	vec3 normal = getNormal();
 
+	
 	// Incident light
 	float incidence = dot(normalize(light - vPosition), normal);
 	incidence = clamp(incidence, 0.0, 1.0);
 	incidence = pow(incidence, 0.02);
-	color = mix(vec3(0, 0, 0), color, incidence);
+	color = mix(vec3(0, 0, 0), color, incidence); 
 
 	// Mix in specular light
 	vec3 halfVector = normalize(normalize(cameraPosition - vPosition) + normalize(light - vPosition));
@@ -76,13 +85,13 @@ void main() {
 	// Add height fog
 	float fogFactor = clamp( 1.0 - vPosition.y / 25.0, 0.0, 1.0 );
 	fogFactor = pow( fogFactor, 5.4 );
-	color = mix( color, vec3( 1.0, 0.9, 0.8 ), fogFactor );
+	//color = mix( color, vec3( 1.0, 0.9, 0.8 ), fogFactor );
 
 	// Add distance fog
 	float depth = gl_FragCoord.z / gl_FragCoord.w;
 	fogFactor = smoothstep( 300.0, 1000.0, depth );
 	//fogFactor = fogFactor * ( 1.0 - clamp( ( camH - 5.0 ) / 8.0, 0.0, 1.0 ) );
-	//color = mix( color, vec3( 0, 0, 0 ), fogFactor );
+	//color = mix( color, vec3( 0, 0, 0 ), fogFactor ); 
 
 	gl_FragColor = vec4(color, 1.0);
 }

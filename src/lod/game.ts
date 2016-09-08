@@ -22,7 +22,8 @@ export class Game {
 		this.terrain.visible = true;
 
 		this.scene.add(this.terrain);
-		this.addTestGeometry();
+		var axisHelper = new THREE.AxisHelper( 5000 );
+		this.scene.add( axisHelper );
 		this.render();
 	}
 
@@ -40,8 +41,6 @@ export class Game {
 
 		this.player.camera.position.z = 5;
 
-		var axisHelper = new THREE.AxisHelper( 5000 );
-		this.scene.add( axisHelper );
 	}
 
 	initThreeJS() {
@@ -60,6 +59,9 @@ export class Game {
 		delta = delta || 1/60;
 		this.renderer.render(this.scene, this.player.camera);
 		this.player.update(delta);
+		this.terrain.offset.x = this.player.pointerLockControls.getObject().position.x;
+		this.terrain.offset.y = this.player.pointerLockControls.getObject().position.z;
+		this.terrain.frustumCulled = false;
 
 		requestAnimationFrame(() => {
 			this.render(this.clock.getDelta()); 

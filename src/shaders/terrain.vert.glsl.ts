@@ -1,19 +1,19 @@
 export function GetTerrainVertexShader(): string { return `
-uniform vec3 uGlobalOffset;
+uniform vec2 uGlobalOffset;
 uniform sampler2D uHeightData;
-uniform vec3 uTileOffset;
+uniform vec2 uTileOffset;
 uniform float uScale;
+uniform float uTileResolution;
 
 varying vec3 vNormal;
 varying vec3 vPosition;
 varying float vMorphFactor;
 
 // Number of vertices along edge of tile
-#define TILE_RESOLUTION 128.0
 
 float getHeight(vec3 p) {
 	// Assume a 1024x1024 world
-	float lod = 0.0;//log2(uScale) - 6.0;
+	float lod = log2(uScale) - 6.0;
 	vec2 st = p.xz / 1024.0;
 
 	// Sample multiple times to get more detail out of map
@@ -29,7 +29,7 @@ float getHeight(vec3 p) {
 vec3 getNormal() {
 	// Get 2 vectors perpendicular to the unperturbed normal, and create at point at each (relative to position)
 	//float delta = 1024.0 / 4.0;
-	float delta = (vMorphFactor + 1.0) * uScale / TILE_RESOLUTION;
+	float delta = (vMorphFactor + 1.0) * uScale / uTileResolution;
 	vec3 dA = delta * normalize(cross(normal.xyz, normal));
 	vec3 dB = delta * normalize(cross(dA, normal));
 	vec3 p = vPosition;
@@ -57,10 +57,10 @@ void main() {
 	vMorphFactor = calculateMorph(position);
 
 	// Move into correct place
-	vPosition = uScale * position + uTileOffset + uGlobalOffset;
+	vPosition = uScale * position + vec3(uTileOffset.x, 0, uTileOffset.y) + vec3(uGlobalOffset.x, 0, uGlobalOffset.y);
 
 	// Snap to grid
-	float grid = uScale / TILE_RESOLUTION;
+	float grid = uScale / uTileResolution;
 	vPosition = floor(vPosition / grid) * grid;
 
 	// Morph between zoom layers
