@@ -13,13 +13,14 @@ varying float vMorphFactor;
 
 float getHeight(vec3 p) {
 	// Assume a 1024x1024 world
-	float lod = log2(uScale) - 6.0;
+	float lod = 0.0;//log2(uScale) - 6.0;
 	vec2 st = p.xz / 1024.0;
 
 	// Sample multiple times to get more detail out of map
 	float h = 1024.0 * texture2DLod(uHeightData, st, lod).a;
 	h += 64.0 * texture2DLod(uHeightData, 16.0 * st, lod).a;
 	h += 4.0 * texture2DLod(uHeightData, 256.0 * st, lod).a;
+	h += 2.0 * texture2DLod(uHeightData, 256.0 * 4.0 * st, lod).a;
 
 	// Square the height, leads to more rocky looking terrain
 	return h * h / 2000.0;
@@ -57,7 +58,7 @@ void main() {
 	vMorphFactor = calculateMorph(position);
 
 	// Move into correct place
-	vPosition = uScale * position + vec3(uTileOffset.x, 0, uTileOffset.y) + vec3(uGlobalOffset.x, 0, uGlobalOffset.y);
+	vPosition = uScale * vec3(position.x, 0, position.z) + vec3(uTileOffset.x, 0, uTileOffset.y) + vec3(uGlobalOffset.x, 0, uGlobalOffset.y);
 
 	// Snap to grid
 	float grid = uScale / uTileResolution;
@@ -76,7 +77,7 @@ void main() {
 	// Get height and calculate normal
 	vPosition = vPosition + normal * getHeight(vPosition);
 	vNormal = getNormal();
-	//vNormal = normal;
+	vNormal = normal;
 	gl_Position = projectionMatrix * modelViewMatrix * vec4(vPosition, 1.0);
 }
 `;}

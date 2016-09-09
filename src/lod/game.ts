@@ -17,7 +17,7 @@ export class Game {
 
 		let noise = new Noise().noiseTexture;
 
-		this.terrain = new Terrain(noise, 1024, 4, 64);
+		this.terrain = new Terrain(noise, 1024, 6, 64);
 
 		this.terrain.visible = true;
 
