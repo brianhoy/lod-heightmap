@@ -1,5 +1,5 @@
-export function GetTerrainFragmentShader(): string { return `
-#extension GL_OES_standard_derivatives : enable
+/* Start Terrain Fragment Shader */
+
 uniform float uScale;
 uniform sampler2D uHeightData;
 uniform sampler2D uRock;
@@ -8,16 +8,30 @@ varying float vMorphFactor;
 varying vec3 vNormal;
 varying vec3 vPosition;
 
-#include <colorScale>
+#define nFrequency 2.0
+#define nOctaves 6
+#define nPersistence 0.25
+#define nLancunarity 4.0
+
+#include <noisecommon>
+#include <noiseperlin>
+#include <noisecellular>
 
 float getHeight(vec3 p) {
 	// Assume a 1024x1024 world
-	vec2 st = p.xz / 1024.0;
+	float lod = 0.0;//log2(uScale) - 6.0;
+	vec2 st = p.xz / 512.0;
 
-	// Sample multiple times to get more detail out of map
-	float h = 1024.0 * texture2D(uHeightData, st).a;
-	h += 64.0 * texture2D(uHeightData, 16.0 * st).a;
-	h += 4.0 * texture2D(uHeightData, 256.0 * st).a;
+	float frequency = nFrequency;
+	float amplitude = 300.0;
+
+	float h = 0.0;
+	for(int i = 0; i < nOctaves; i++) {
+		h += amplitude * perlin(st * frequency);
+
+		frequency *= nLancunarity;
+		amplitude *= nPersistence;
+	}
 
 	// Square the height, leads to more rocky looking terrain
 	return h * h / 2000.0;
@@ -29,12 +43,12 @@ vec3 getNormal() {
 	// calculation here, rather than in the vertex shader, we get a per-fragment calculated normal, rather
 	// than a per-vertex normal. This improves the look of distant low-vertex terrain.
 	float height = getHeight( vPosition );
-	vec3 p = vec3( vPosition.x, vPosition.y, vPosition.z );
+	vec3 p = vec3( vPosition.x, height, vPosition.z );
 	vec3 dPositiondx = dFdx(p);
 	vec3 dPositiondy = dFdy(p);
 
 	// The normal is the cross product of the differentials
-  return normalize(cross(dPositiondx, dPositiondy));
+	  return normalize(cross(dPositiondx, dPositiondy));
 	/*vec3 fdx = vec3( dFdx( vPosition.x ), dFdx( vPosition.y ), dFdx( vPosition.z ) );
 	vec3 fdy = vec3( dFdy( vPosition.x ), dFdy( vPosition.y ), dFdy( vPosition.z ) );
 	vec3 normal = normalize( cross( fdx, fdy ) );
@@ -44,12 +58,12 @@ vec3 getNormal() {
 void main() {
 	// Base color
 	vec3 light = vec3(80.0, 150.0, 50.0);
-	vec3 color = colorForScale(uScale);
+	//vec3 color = colorForScale(uScale);
 	float texScale = 0.03;
 
-	//vec3 color = vec3(0.27, 0.27, 0.17); 
+	vec3 color = vec3(0.27, 0.27, 0.17); 
 	//vec3 color = texture2D(uRock, texScale * vPosition.xz).rgb; 
-	color = mix(vec3(vMorphFactor), color, 1.0 - vMorphFactor);
+	//color = mix(vec3(vMorphFactor), color, 1.0 - vMorphFactor);
 
 	vec3 normal = getNormal();
 
@@ -58,7 +72,7 @@ void main() {
 	float incidence = dot(normalize(light - vPosition), normal);
 	incidence = clamp(incidence, 0.0, 1.0);
 	incidence = pow(incidence, 0.02);
-	color = mix(vec3(0, 0, 0), color, incidence); 
+	color = mix(vec3(0, 0, 0), color, incidence);
 
 	// Mix in specular light
 	vec3 halfVector = normalize(normalize(cameraPosition - vPosition) + normalize(light - vPosition));
@@ -80,7 +94,7 @@ void main() {
 	specular = dot(normal, halfVector);
 	specular = max(0.0, specular);
 	specular = pow(specular, 130.0);
-	color = mix(color, vec3(1.0, 0.5, 0), specular);
+	//color = mix(color, vec3(1.0, 0.5, 0), specular);
 
 	// Add height fog
 	float fogFactor = clamp( 1.0 - vPosition.y / 25.0, 0.0, 1.0 );
@@ -95,4 +109,3 @@ void main() {
 
 	gl_FragColor = vec4(color, 1.0);
 }
-`;}

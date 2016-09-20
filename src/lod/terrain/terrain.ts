@@ -1,20 +1,20 @@
 import { Player } from '../player/player';
 import { Edge } from './edge';
 
-import '../../shaders/edgemorph.chunk.glsl';
-import '../../shaders/colorscale.chunk.glsl';
-import { GetTerrainFragmentShader } from '../../shaders/terrain.frag.glsl';
-import { GetTerrainVertexShader } from '../../shaders/terrain.vert.glsl';
 import { Texture } from './texture';
+import { TerrainGenerator } from './terrain-generator';
 
 // ported from https://github.com/felixpalmer/lod-terrain/blob/master/js/app/terrain.js
 
-export class Terrain extends THREE.Object3D{
+export class Terrain extends THREE.Object3D {
 	private worldWidth: number;
 	private levels: number;
 	private resolution: number;
 	private heightData: any;
+	private seed: number;
+
 	public offset: THREE.Vector2;
+	public terrainGenerator: TerrainGenerator;
 
 	private texture: Texture;
 	private shader: THREE.Shader;
@@ -22,16 +22,26 @@ export class Terrain extends THREE.Object3D{
 	private tiles: THREE.Mesh[];
 	private tileGeometry: THREE.PlaneBufferGeometry;
 
-	constructor(heightData, worldWidth, levels, resolution) {
-		super();
-		
-		this.tiles = [];
-		//THREE.Object3D.call( this );
+	private vertexShader: string;
+	private fragmentShader: string;
+	
+	private terrainTexture: THREE.Texture;
 
-		this.worldWidth = ( worldWidth !== undefined ) ? worldWidth : 1024;
+	constructor(heightData, worldWidth, levels, resolution) { super();
+		// Initialize seed - this will be passed to the vertex shader so the noise is more random.
+		this.seed = Math.round(Math.random() * 10000);
+
+		this.tiles = [];
+
+		// Initialize WorldWidth, Levels, Resolution, and HeightData variables
+		this.worldWidth = ( worldWidth !== undefined ) ? worldWidth : 1024.0;
 		this.levels = ( levels !== undefined ) ? levels : 6;
 		this.resolution = ( resolution !== undefined ) ? resolution : 128;
 		this.heightData = heightData;
+
+		// Load shaders
+		this.loadShaders();
+
 		this.texture = new Texture(() => {
 			this.createTiles();
 		});
@@ -39,20 +49,34 @@ export class Terrain extends THREE.Object3D{
 		// Offset is used to re-center the terrain, this way we get the greates detail
 		// nearest to the camera. In the future, should calculate required detail level per tile
 		this.offset = new THREE.Vector2( 0, 0 );
+
+		this.terrainGenerator = new TerrainGenerator(worldWidth, this.offset);
+		this.terrainTexture = this.terrainGenerator.texture;
+	}
+
+	private loadShaders() {
+		THREE.ShaderChunk['edgemorph'] = require('../../shaders/chunks/edgemorph.glsl');
+		THREE.ShaderChunk['colorscale'] = require('../../shaders/chunks/colorscale.glsl');
+		THREE.ShaderChunk['noisecommon'] = require('../../shaders/chunks/noisecommon.glsl');
+		THREE.ShaderChunk['noiseperlin'] = require('../../shaders/chunks/noiseperlin.glsl');
+		THREE.ShaderChunk['noisecellular'] = require('../../shaders/chunks/noisecellular.glsl');
+
+		this.fragmentShader = require('../../shaders/terrain.frag');
+		this.vertexShader = require('../../shaders/terrain.vert');
 	}
 
 	private createTiles() {
 		// Create geometry that we'll use for each tile, just a standard plane
 		this.tileGeometry = new THREE.PlaneBufferGeometry( 1, 1, this.resolution, this.resolution );
-		this.tileGeometry.rotateX(-Math.PI / 2);
+		this.tileGeometry.rotateX(-Math.PI / 2); // Tiles are parallel to the xz plane
+
 		// Place origin at bottom left corner, rather than center
 		var m = new THREE.Matrix4();
 		m.makeTranslation( 0.5, 0, 0.5 );
-		m.makeRotationX(- Math.PI / 2);
-		//this.tileGeometry.applyMatrix( m );
+		//m.makeRotationX(- Math.PI / 2);
+
 		this.tileGeometry.translate(0.5, 0, 0.5)
 		// Create collection of tiles to fill required space
-		/*jslint bitwise: true */
 		let initialScale = this.worldWidth / Math.pow( 2, this.levels );
 
 		// Create center layer first
@@ -101,22 +125,28 @@ export class Terrain extends THREE.Object3D{
 	}
 
 	private createTerrainMaterial(heightData, globalOffset, offset, scale, resolution, edgeMorph): THREE.ShaderMaterial {
-		return new THREE.ShaderMaterial({
+		let mat = new THREE.ShaderMaterial({
 			uniforms: {
 				uEdgeMorph: { type: "i", value: edgeMorph },
 				uGlobalOffset: { type: "v2", value: globalOffset },
-				uHeightData: { type: "t", value: heightData },
+				uHeightData: { type: "t", value: this.terrainTexture },
 				//uGrass: { type: "t", value: texture.grass },
 				uRock: { type: "t", value: this.texture.rock },
 				//uSnow: { type: "t", value: texture.snow },
 				uTileOffset: { type: "v2", value: offset },
 				uScale: { type: "f", value: scale },
-				uTileResolution: { type: "f", value: resolution.toFixed(1)}
+				uTileResolution: { type: "f", value: resolution.toFixed(1)},
+				uSeed: { type: "f", value: this.seed }
 			},
-			vertexShader: GetTerrainVertexShader(),
-			fragmentShader: GetTerrainFragmentShader(),
+			defines: {
+				WORLD_WIDTH: this.worldWidth
+			},
+			vertexShader: this.vertexShader,
+			fragmentShader: this.fragmentShader,
 			transparent: true
-		})
+		});
+		mat.extensions.derivatives = true;
+		return mat;
 	}
 
 	private createTile(x, z, scale, edgeMorph) {
@@ -127,5 +157,9 @@ export class Terrain extends THREE.Object3D{
 		this.add( plane );
 		this.tiles.push(plane);
 		plane.frustumCulled = false;
+	}
+
+	public update() {
+		this.terrainGenerator.updateTexture();
 	}
 }

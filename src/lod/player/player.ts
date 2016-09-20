@@ -118,7 +118,7 @@ export class Player {
 	private calculateNewVelocity(delta: number): void {
 		this.velocity.set(0, 0, 0);
 
-		let walkingSpeed = 20;
+		let walkingSpeed = 200;
 
 		if (this.moveForward) this.velocity.z -= walkingSpeed * delta;
 		if (this.moveBackward) this.velocity.z += walkingSpeed * delta;

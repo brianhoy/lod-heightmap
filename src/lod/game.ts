@@ -1,3 +1,5 @@
+// TODO Add mesh to visualize the terrain texture
+
 import { Player } from './player/player';
 import { Terrain } from './terrain/Terrain';
 import { Noise } from './terrain/noise';
@@ -17,18 +19,19 @@ export class Game {
 
 		let noise = new Noise().noiseTexture;
 
-		this.terrain = new Terrain(noise, 1024, 6, 64);
+		this.terrain = new Terrain(noise, 1024, 4, 128);
 
 		this.terrain.visible = true;
 
 		this.scene.add(this.terrain);
 		var axisHelper = new THREE.AxisHelper( 5000 );
 		this.scene.add( axisHelper );
+		this.addTestGeometry();
 		this.render();
 	}
 
 	addTestGeometry() {
-		for(let i = 0; i < 1000; i++) {
+		/*for(let i = 0; i < 1000; i++) {
 			var geometry = new THREE.BoxGeometry( 1, 1, 1 );
 			var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
 			var cube = new THREE.Mesh( geometry, material );
@@ -37,6 +40,26 @@ export class Game {
 			cube.position.y = Math.random() * 1000;
 
 			this.scene.add( cube );
+		}*/
+
+		{
+			let material = new THREE.ShaderMaterial({
+				uniforms: {
+					uHeightData: { type: "t", value: this.terrain.terrainGenerator.texture }
+				},
+				fragmentShader: require('../shaders/debugterrain.frag'),
+				vertexShader: require('../shaders/debugterrain.vert')
+			})
+			material.extensions.derivatives = true;
+			let geometry = new THREE.PlaneGeometry(64, 64, 10, 10);
+			//geometry.rotateX(-Math.PI / 2);
+
+			let mesh = new THREE.Mesh(geometry, material);
+
+			mesh.position.z = -50;
+			mesh.position.y = 50;
+
+			this.scene.add(mesh);
 		}
 
 		this.player.camera.position.z = 5;
@@ -62,6 +85,7 @@ export class Game {
 		this.terrain.offset.x = this.player.pointerLockControls.getObject().position.x;
 		this.terrain.offset.y = this.player.pointerLockControls.getObject().position.z;
 		this.terrain.frustumCulled = false;
+		this.terrain.update();
 
 		requestAnimationFrame(() => {
 			this.render(this.clock.getDelta()); 

@@ -1,4 +1,3 @@
-THREE.ShaderChunk['edgemorph'] = `
 uniform int uEdgeMorph;
 
 #define EGDE_MORPH_TOP 1
@@ -36,4 +35,3 @@ float calculateMorph(vec3 p) {
 
   return morphFactor;
 }
-`

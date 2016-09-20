@@ -1,4 +1,3 @@
-THREE.ShaderChunk['colorScale'] = `
 vec3 colorForScale(float scale) {
   if ( scale > 32.0 ) {
     scale /= 32.0;
@@ -19,4 +18,4 @@ vec3 colorForScale(float scale) {
 
   // Shouldn't happen
   return vec3(0, 0, 0);
-}`
+}

@@ -2,6 +2,7 @@ var webpack = require('webpack');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 var ExtractTextPlugin = require('extract-text-webpack-plugin');
 var helpers = require('./helpers');
+var path = require('path');
 
 module.exports = {
   entry: {
@@ -42,8 +43,16 @@ module.exports = {
       {
         test: /\.worker.js$/,
         loader: 'worker-loader'
+      },
+      {
+        test: /\.(glsl|frag|vert)$/, 
+        loader: 'shader-loader'
       }
     ]
+  },
+
+  glsl: {
+    chunkPath: path.join(__dirname, '../src/shaders/chunks')
   },
 
   plugins: [
