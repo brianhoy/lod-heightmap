@@ -13,8 +13,9 @@ export class TerrainGenerator {
 
 	private cornerCoords: THREE.Vector2; // The real-world coordinates fed into the perlin noise function at writeCoords
 	private writeCoords: THREE.Vector2; // The coordinates of the used drawing area
-	private oldObsCoords: THREE.Vector2; // used to find the delta, which is used to update the texture
 	private deltaCoords: THREE.Vector2;
+	private oldDeltaCoords: THREE.Vector2; // used to find the delta, which is used to update the texture
+	private delta: THREE.Vector2;
 
 	private tempDimensions: THREE.Vector2;
 	private tempWritePos: THREE.Vector2;
@@ -30,8 +31,9 @@ export class TerrainGenerator {
 
 		// Initialize coordinates
 		this.writeCoords = new THREE.Vector2(0, 0);
-		this.oldObsCoords = this.obsCoordinates.clone();
+		this.oldDeltaCoords = this.writeCoords.clone();
 		this.deltaCoords = new THREE.Vector2(0, 0);
+		this.delta = new THREE.Vector2(0,0);
 
 		// Intialize temp variables
 		this.tempDimensions = new THREE.Vector2(0, 0);
@@ -65,8 +67,8 @@ export class TerrainGenerator {
 		let rowIndex = writeLoc.y;
 		let colIndex = writeLoc.x;
 
-		let obsX = this.cornerCoords.x;
-		let obsY = this.cornerCoords.y;
+		let obsX = cornerCoords.x;
+		let obsY = cornerCoords.y;
 
 		for(let row = 0; row < dimensions.y; row++, obsY++, rowIndex++) {
 			rowIndex = this.ensureWithinTexture(rowIndex);
@@ -99,14 +101,14 @@ export class TerrainGenerator {
 			[] [] [] X
 					 
 		*/
-		if(this.deltaCoords.x > 0) {
+		if(this.delta.x > 0) {
 			this.tempWritePos.set(
 				this.ensureWithinTexture(this.writeCoords.x + this.terrainSize),
 				this.writeCoords.y
 			);
 
 			this.tempDimensions.set(
-				this.deltaCoords.x,
+				this.delta.x,
 				this.terrainSize
 			);
 
@@ -123,14 +125,14 @@ export class TerrainGenerator {
 			X [] [] [] 
 		     
 		*/
-		else if(this.deltaCoords.x < 0) {
+		else if(this.delta.x < 0) {
 			this.tempWritePos.set(
 				this.writeCoords.x,
 				this.writeCoords.y
 			);
 
 			this.tempDimensions.set(
-				Math.abs(this.deltaCoords.x),
+				Math.abs(this.delta.x),
 				this.terrainSize
 			);
 
@@ -147,7 +149,7 @@ export class TerrainGenerator {
 			[] [] [] 
 			[] [] [] 
 		*/
-		if(this.deltaCoords.y < 0) {
+		if(this.delta.y < 0) {
 			this.tempWritePos.set(
 				this.writeCoords.x,
 				this.writeCoords.y
@@ -155,7 +157,7 @@ export class TerrainGenerator {
 
 			this.tempDimensions.set(
 				this.terrainSize,
-				Math.abs(this.deltaCoords.y)
+				Math.abs(this.delta.y)
 			);
 
 			this.tempCornerCords.set(
@@ -171,7 +173,7 @@ export class TerrainGenerator {
 			[] [] [] 
 		    X  X  X 
 		*/
-		else if(this.deltaCoords.y > 0) {
+		else if(this.delta.y > 0) {
 			this.tempWritePos.set(
 				this.writeCoords.x,
 				this.writeCoords.y + this.terrainSize
@@ -179,7 +181,7 @@ export class TerrainGenerator {
 
 			this.tempDimensions.set(
 				this.terrainSize,
-				this.deltaCoords.y
+				this.delta.y
 			);
 
 			this.tempCornerCords.set(
@@ -189,6 +191,8 @@ export class TerrainGenerator {
 			
 			this.writeSubRectangle(this.tempWritePos, this.tempCornerCords, this.tempDimensions);
 		}
+
+		this.delta.set(0, 0);
 
 		this.texture.needsUpdate = true; 
 	}
@@ -212,7 +216,10 @@ export class TerrainGenerator {
 		this.updateWriteCoords();
 		//console.log("write coords after updating", this.writeCoords);
 		this.updateDeltaCoords();
-		this.oldObsCoords.copy(this.obsCoordinates); 
+		if(this.deltaCoords.x - this.oldDeltaCoords.x > 2 || this.deltaCoords.y - this.oldDeltaCoords.y > 2) {
+			console.log("updating delta", this.delta);
+			this.updateDelta();
+		}
 	}
 
 	private updateCornerCoords() {
@@ -230,11 +237,18 @@ export class TerrainGenerator {
 	}
 
 	private updateDeltaCoords() {
-		// nearest non-zero integer
 		this.deltaCoords.set(
-			this.obsCoordinates.x > 0 ? Math.ceil(this.obsCoordinates.x - this.oldObsCoords.x) : Math.floor(this.obsCoordinates.x - this.oldObsCoords.x), 
-			this.obsCoordinates.y > 0 ? Math.ceil(this.obsCoordinates.y - this.oldObsCoords.y) : Math.floor(this.obsCoordinates.y - this.oldObsCoords.y)
+			Math.floor(this.obsCoordinates.x),
+			Math.floor(this.obsCoordinates.y)
+		)
+	}
+
+	private updateDelta() {
+		this.delta.set(
+			this.deltaCoords.x - this.oldDeltaCoords.x,
+			this.deltaCoords.y - this.oldDeltaCoords.y
 		);
+		this.oldDeltaCoords.copy(this.deltaCoords); 
 	}
 
 	private noise(x: number, y: number): number {
