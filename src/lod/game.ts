@@ -2,7 +2,6 @@
 
 import { Player } from './player/player';
 import { Terrain } from './terrain/Terrain';
-import { Noise } from './terrain/noise';
 
 export class Game {
 	private scene: THREE.Scene;
@@ -12,14 +11,13 @@ export class Game {
 	private clock: THREE.Clock;
 	private terrain: Terrain;
 
+	private debugTerrainPlane: THREE.Mesh; 
 	constructor() {
 		this.initThreeJS();
 		this.player = new Player(this.scene);
 		this.clock = new THREE.Clock();
 
-		let noise = new Noise().noiseTexture;
-
-		this.terrain = new Terrain(noise, 1024, 4, 128);
+		this.terrain = new Terrain(1024, 4, 128);
 
 		this.terrain.visible = true;
 
@@ -54,12 +52,15 @@ export class Game {
 			let geometry = new THREE.PlaneGeometry(64, 64, 10, 10);
 			//geometry.rotateX(-Math.PI / 2);
 
-			let mesh = new THREE.Mesh(geometry, material);
+			this.debugTerrainPlane = new THREE.Mesh(geometry, material);
 
-			mesh.position.z = -50;
-			mesh.position.y = 50;
+			this.debugTerrainPlane.position.z = -60;
+			this.debugTerrainPlane.position.x = -50;
+			this.debugTerrainPlane.position.y = -10;
+			//this.debugTerrainPlane.position.y = 50;
 
-			this.scene.add(mesh);
+			this.player.pointerLockControls.pitchObject.add(this.debugTerrainPlane);
+			//this.scene.add(this.debugTerrainPlane);
 		}
 
 		this.player.camera.position.z = 5;
@@ -86,6 +87,9 @@ export class Game {
 		this.terrain.offset.y = this.player.pointerLockControls.getObject().position.z;
 		this.terrain.frustumCulled = false;
 		this.terrain.update();
+
+		//this.debugTerrainPlane.position.set(this.player.camera.getWorldPosition().x, this.player.camera.getWorldPosition().y, this.player.camera.getWorldPosition().z);
+
 
 		requestAnimationFrame(() => {
 			this.render(this.clock.getDelta()); 

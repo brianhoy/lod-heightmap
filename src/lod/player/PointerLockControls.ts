@@ -2,8 +2,8 @@
 
 export class PointerLockControls {
 	private static scope: PointerLockControls;
-	private pitchObject: THREE.Object3D;
-	private yawObject: THREE.Object3D;
+	public pitchObject: THREE.Object3D;
+	public yawObject: THREE.Object3D;
 	private PI_2: number;
 	private rootElement: HTMLElement;
 

@@ -10,7 +10,6 @@ export class Terrain extends THREE.Object3D {
 	private worldWidth: number;
 	private levels: number;
 	private resolution: number;
-	private heightData: any;
 	private seed: number;
 
 	public offset: THREE.Vector2;
@@ -27,7 +26,7 @@ export class Terrain extends THREE.Object3D {
 	
 	private terrainTexture: THREE.Texture;
 
-	constructor(heightData, worldWidth, levels, resolution) { super();
+	constructor(worldWidth, levels, resolution) { super();
 		// Initialize seed - this will be passed to the vertex shader so the noise is more random.
 		this.seed = Math.round(Math.random() * 10000);
 
@@ -37,7 +36,6 @@ export class Terrain extends THREE.Object3D {
 		this.worldWidth = ( worldWidth !== undefined ) ? worldWidth : 1024.0;
 		this.levels = ( levels !== undefined ) ? levels : 6;
 		this.resolution = ( resolution !== undefined ) ? resolution : 128;
-		this.heightData = heightData;
 
 		// Load shaders
 		this.loadShaders();
@@ -124,7 +122,7 @@ export class Terrain extends THREE.Object3D {
 
 	}
 
-	private createTerrainMaterial(heightData, globalOffset, offset, scale, resolution, edgeMorph): THREE.ShaderMaterial {
+	private createTerrainMaterial(globalOffset, offset, scale, resolution, edgeMorph): THREE.ShaderMaterial {
 		let mat = new THREE.ShaderMaterial({
 			uniforms: {
 				uEdgeMorph: { type: "i", value: edgeMorph },
@@ -150,8 +148,7 @@ export class Terrain extends THREE.Object3D {
 	}
 
 	private createTile(x, z, scale, edgeMorph) {
-		let terrainMaterial = this.createTerrainMaterial(this.heightData,
-			this.offset, new THREE.Vector2(x, z), scale, this.resolution, edgeMorph );
+		let terrainMaterial = this.createTerrainMaterial(this.offset, new THREE.Vector2(x, z), scale, this.resolution, edgeMorph);
 
 		var plane = new THREE.Mesh( this.tileGeometry, terrainMaterial );
 		this.add( plane );
