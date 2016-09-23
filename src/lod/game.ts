@@ -2,6 +2,7 @@
 
 import { Player } from './player/player';
 import { Terrain } from './terrain/Terrain';
+import { Sky } from './environment/sky/Sky';
 
 export class Game {
 	private scene: THREE.Scene;
@@ -10,6 +11,7 @@ export class Game {
 	private player: Player;
 	private clock: THREE.Clock;
 	private terrain: Terrain;
+	private sky: Sky;
 
 	private debugTerrainPlane: THREE.Mesh; 
 	constructor() {
@@ -17,13 +19,16 @@ export class Game {
 		this.player = new Player(this.scene);
 		this.clock = new THREE.Clock();
 
-		this.terrain = new Terrain(1024, 4, 128);
+		this.terrain = new Terrain(1024, 4, 32);
 
 		this.terrain.visible = true;
 
 		this.scene.add(this.terrain);
 		var axisHelper = new THREE.AxisHelper( 5000 );
 		this.scene.add( axisHelper );
+
+		this.sky = new Sky(this.scene);
+
 		this.addTestGeometry();
 		this.render();
 	}
@@ -87,6 +92,8 @@ export class Game {
 		this.terrain.offset.y = this.player.pointerLockControls.getObject().position.z;
 		this.terrain.frustumCulled = false;
 		this.terrain.update();
+
+		this.sky.update(0.0001, this.player.pointerLockControls.getObject().position);
 
 		//this.debugTerrainPlane.position.set(this.player.camera.getWorldPosition().x, this.player.camera.getWorldPosition().y, this.player.camera.getWorldPosition().z);
 

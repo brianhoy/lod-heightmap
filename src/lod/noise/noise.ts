@@ -35,6 +35,9 @@ export class Noise {
 		else if(this.noiseModel.type == "fastcellular") {
 			//noiseFunction = this.fastcellular.bind(this);
 		}
+		else {
+			min = -1;
+		}
 
 		for(let i = 0; i < this.noiseModel.octaves; i++) {
 			result += noiseFunction(x * frequency, y * frequency) * amplitude;

@@ -7,13 +7,14 @@ uniform float uTileResolution; // Number of vertices along edge of tile
 varying vec3 vNormal;
 varying vec3 vPosition;
 varying float vMorphFactor;
+varying vec3 vViewPosition;
 
 #include <edgemorph>
 
 float getHeight(vec3 p) {
 	vec2 st = (p.xz + (float(WORLD_WIDTH))) / (float(WORLD_WIDTH) * 4.0);
 
-	return pow(150.0 * texture2DLod(uHeightData, st, 0.0).a - 0.5, 2.0) / 200.0;
+	return texture2DLod(uHeightData, st, 0.0).a * 300.0;
 }
 
 vec3 getNormal() {

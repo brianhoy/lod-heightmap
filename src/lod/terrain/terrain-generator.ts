@@ -47,7 +47,7 @@ export class TerrainGenerator {
 		this.writeSubRectangle(new THREE.Vector2(0, 0), this.cornerCoords, new THREE.Vector2(this.terrainSize, this.terrainSize));
 
 		// Initialize the texture
-		this.texture = new THREE.DataTexture(this.data, this.size, this.size, THREE.AlphaFormat );
+		this.texture = new THREE.DataTexture(this.data, this.size, this.size, THREE.AlphaFormat);
 		this.texture.wrapS = THREE.RepeatWrapping;
 		this.texture.wrapT = THREE.RepeatWrapping;
 		this.texture.needsUpdate = true;
@@ -205,6 +205,6 @@ export class TerrainGenerator {
 	}
 
 	private noise(x: number, y: number): number {
-		return (this.perlin.noise(x / 100, y / 100)) / 10;
+		return (this.perlin.noise(x, y));
 	}
 }
